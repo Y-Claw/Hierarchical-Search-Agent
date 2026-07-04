@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>JSON Comparison Viewer</title>
+    <style>
+        body { margin: 0; font-family: Arial, sans-serif; }
+        #container { display: flex; height: 100vh; }
+        #sidebar { width: 250px; background: #f0f0f0; padding: 20px; overflow-y: auto; }
+        #content { flex: 1; display: flex; padding: 20px; overflow-x: auto; }
+        .file-item { padding: 8px; cursor: pointer; border-bottom: 1px solid #ddd; }
+        .file-item:hover { background: #e0e0e0; }
+        pre { background: #f8f8f8; padding: 15px; border-radius: 5px; max-width: 100%; white-space: pre-wrap; word-wrap: break-word; }
+        .column { flex: 1; margin: 0 10px; overflow-y: auto; }
+    </style>
+</head>
+<body>
+    <div id="container">
+        <div id="sidebar">
+            <h3>样本列表</h3>
+            <div id="file-list"></div>
+        </div>
+        <div id="content">
+            <div class="column">
+                <h3>目录1 JSON内容</h3>
+                <pre id="json-display-1"></pre>
+            </div>
+            <div class="column">
+                <h3>目录2 JSON内容</h3>
+                <pre id="json-display-2"></pre>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentFileIndex = 0;
+        let pairedFiles = [];
+
+        // Load and pair files based on task_id
+        function loadAndPairFiles() {
+            fetch('/list/1')
+                .then(response => response.json())
+                .then(data1 => {
+                    fetch('/list/2')
+                        .then(response => response.json())
+                        .then(data2 => {
+                            const files1 = data1.files;
+                            const files2 = data2.files;
+                            const taskIdMap1 = {};
+                            const taskIdMap2 = {};
+
+                            // Create a map of task_id to filename for each directory
+                            files1.forEach(file => {
+                                fetch(`/data/1/${file}`)
+                                    .then(response => response.json())
+                                    .then(data => {
+                                        if (data.task_id) {
+                                            taskIdMap1[data.task_id] = file;
+                                            checkAndPairFiles(taskIdMap1, taskIdMap2);
+                                        }
+                                    });
+                            });
+
+                            files2.forEach(file => {
+                                fetch(`/data/2/${file}`)
+                                    .then(response => response.json())
+                                    .then(data => {
+                                        if (data.task_id) {
+                                            taskIdMap2[data.task_id] = file;
+                                            checkAndPairFiles(taskIdMap1, taskIdMap2);
+                                        }
+                                    });
+                            });
+                        });
+                });
+        }
+
+        // Check and pair files based on task_id
+        function checkAndPairFiles(map1, map2) {
+            pairedFiles = [];
+            for (const taskId in map1) {
+                if (map2[taskId]) {
+                    pairedFiles.push({ file1: map1[taskId], file2: map2[taskId] });
+                }
+            }
+            updateFileList();
+            if (pairedFiles.length > 0) {
+                loadFiles(0);
+            }
+        }
+
+        // Update the file list in the sidebar
+        function updateFileList() {
+            const listDiv = document.getElementById('file-list');
+            listDiv.innerHTML = '';
+            pairedFiles.forEach((pair, index) => {
+                const div = document.createElement('div');
+                div.className = 'file-item';
+                div.textContent = `Task ID: ${index + 1}`;
+                div.onclick = () => loadFiles(index);
+                listDiv.appendChild(div);
+            });
+        }
+
+        // Load file contents
+        function loadFiles(index) {
+            currentFileIndex = index;
+            const { file1, file2 } = pairedFiles[index];
+            fetch(`/data/1/${file1}`)
+                .then(response => response.json())
+                .then(data => {
+                    const display1 = document.getElementById('json-display-1');
+                    display1.textContent = JSON.stringify(data, null, 2);
+                });
+            fetch(`/data/2/${file2}`)
+                .then(response => response.json())
+                .then(data => {
+                    const display2 = document.getElementById('json-display-2');
+                    display2.textContent = JSON.stringify(data, null, 2);
+                });
+        }
+
+        // Listen for keyboard events
+        document.addEventListener('keydown', function(event) {
+            if (event.key === 'ArrowRight') {
+                currentFileIndex = (currentFileIndex + 1) % pairedFiles.length;
+                loadFiles(currentFileIndex);
+            } else if (event.key === 'ArrowLeft') {
+                currentFileIndex = (currentFileIndex - 1 + pairedFiles.length) % pairedFiles.length;
+                loadFiles(currentFileIndex);
+            }
+        });
+
+        // Initialize
+        loadAndPairFiles();
+    </script>
+</body>
+</html> 

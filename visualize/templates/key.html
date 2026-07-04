@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Key Viewer</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        pre { background: #f8f8f8; padding: 15px; border-radius: 5px; }
+        .back-link { color: #007bff; text-decoration: none; }
+        .back-link:hover { text-decoration: underline; }
+    </style>
+</head>
+<body>
+    <h1>Key: {{ key }}</h1>
+    <pre>{{ value | tojson(indent=2) }}</pre>
+    <a href="/" class="back-link">返回主页</a>
+</body>
+</html>

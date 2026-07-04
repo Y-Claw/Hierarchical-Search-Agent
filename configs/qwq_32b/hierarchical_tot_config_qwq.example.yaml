@@ -1,0 +1,25 @@
+method_type: hierarchical
+model_name: QwQ-32B
+
+# Use a project-relative path or an environment-specific path supplied at runtime.
+# Do not commit absolute local paths or private dataset locations.
+data_path: data/examples/hotpotqa_sample.json
+save_path: results/example_run
+tag: hierarchical_tot_qwq_example
+
+critic_times: 0
+sample_num: 100
+plan_strategy: fact
+sub_agent: tot
+expand_num: 2
+n_select_sample: 2
+search_steps: 8
+simu_steps: 12
+
+state_evaluator_configs:
+  information_evaluator: {}
+  # potential_evaluator: {}
+
+process_evaluator_configs:
+  # coverage_evaluator: {}
+  relevance_evaluator: {}

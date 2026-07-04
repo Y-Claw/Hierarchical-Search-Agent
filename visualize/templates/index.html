@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>JSON Viewer</title>
+    <style>
+        body { margin: 0; font-family: Arial, sans-serif; }
+        #container { display: flex; height: 100vh; }
+        #sidebar { width: 250px; background: #f0f0f0; padding: 20px; overflow-y: auto; }
+        #content { flex: 1; padding: 20px; overflow-x: auto; }
+        .file-item { padding: 8px; cursor: pointer; border-bottom: 1px solid #ddd; }
+        .file-item:hover { background: #e0e0e0; }
+        pre { background: #f8f8f8; padding: 15px; border-radius: 5px; max-width: 100%; white-space: pre-wrap; word-wrap: break-word; }
+        .key-link { color: #007bff; text-decoration: none; }
+        .key-link:hover { text-decoration: underline; }
+    </style>
+</head>
+<body>
+    <div id="container">
+        <div id="sidebar">
+            <h3>样本列表</h3>
+            <div id="file-list"></div>
+        </div>
+        <div id="content">
+            <h3>JSON内容</h3>
+            <pre id="json-display"></pre>
+        </div>
+    </div>
+
+    <script>
+        let currentFileIndex = 0;
+        let files = [];
+
+        // 加载文件列表
+        fetch('/list')
+            .then(response => response.json())
+            .then(data => {
+                files = data.files;
+                const listDiv = document.getElementById('file-list');
+                files.forEach((file, index) => {
+                    const div = document.createElement('div');
+                    div.className = 'file-item';
+                    div.textContent = file;
+                    div.onclick = () => loadFile(index);
+                    listDiv.appendChild(div);
+                });
+                // Load the first file initially
+                if (files.length > 0) {
+                    loadFile(0);
+                }
+            });
+
+        // 加载文件内容
+        function loadFile(index) {
+            currentFileIndex = index;
+            const filename = files[index];
+            fetch(`/data/${filename}`)
+                .then(response => response.json())
+                .then(data => {
+                    const display = document.getElementById('json-display');
+                    let html = '';
+                    for (const key in data) {
+                        let value = JSON.stringify(data[key], null, 2);
+                        // Replace \n with <br> for HTML display
+                        value = value.replace(/\\n/g, '<br>');
+                        html += `<a href="/key/${filename}/${key}" class="key-link">${key}</a>: ${value}<br>`;
+                    }
+                    display.innerHTML = html;
+                });
+        }
+
+        // 监听键盘事件
+        document.addEventListener('keydown', function(event) {
+            if (event.key === 'ArrowRight') {  // 使用右箭头键切换
+                currentFileIndex = (currentFileIndex + 1) % files.length;
+                loadFile(currentFileIndex);
+            } else if (event.key === 'ArrowLeft') {  // 使用左箭头键切换
+                currentFileIndex = (currentFileIndex - 1 + files.length) % files.length;
+                loadFile(currentFileIndex);
+            }
+        });
+    </script>
+</body>
+</html>
